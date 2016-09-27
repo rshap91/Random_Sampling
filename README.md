@@ -5,11 +5,9 @@ Based off of Mike Bostocks ["Visualizing Algorithims"] (https://bost.ocks.org/mi
 ![sampling graph](Images/sampling.png)
 
 The idea is to take samples that will allow the signal to be recreated later by just the samples alone.
-
-
 When choosing these points, you don't want to just choose evenly spaced points accross the image: 
 
-*Don't do this:*
+**Don't do this:**
 ![even_spaced](Images/even_spaced.png)
 
 This is because choosing even spaced samples can lead to Moiree patterns, which are distinct ripples or other patterns that appear in the image when some of the light signals generated are too similar to one another. For example, if not corrected, the picture below of the brick wall will result in moiree patterns due to the repeating bricks.
@@ -22,4 +20,4 @@ Instead you want to choose points that are *MOSTLY* evenly distributed but still
 ![good distribution](Images/best_cand_samp_demo.png)
 
 
-There are a number of ways to do this and I will be focusing on some methods that fall under the category of Random Sampling.
+There are a number of ways to do this and I will be focusing on some methods that fall under the category of [Random Sampling](Sampling_Algorithms.ipynb).
