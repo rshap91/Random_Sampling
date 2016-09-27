@@ -17,4 +17,9 @@ This is because choosing even spaced samples can lead to Moiree patterns, which 
 ![moiree brick wall](Images/moiree_brick_wall.jpg)
 
 
-Instead you want to choose points that are *MOSTLY* evenly distributed but still have some variation to them so there are no repeated patterns that would cause problems. There are a number of ways to do this and I will be focusing on some methods that fall under the category of Random Sampling.
+Instead you want to choose points that are *MOSTLY* evenly distributed but still have some variation to them so there are no repeated patterns that would cause problems. 
+
+![good distribution](Images/best_cand_samp_demo.png)
+
+
+There are a number of ways to do this and I will be focusing on some methods that fall under the category of Random Sampling.
