@@ -2,7 +2,7 @@
 
 Based off of Mike Bostocks ["Visualizing Algorithims"] (https://bost.ocks.org/mike/algorithms/). Random Sampling is used in image processing and feature recognition. The idea is that to convert light (or any continuous signal) into something useable/storable in a computer you need to convert it to discrete impulses. Choosing areas of the image to best characterize the image is called sampling.
 
-[sampling graph](Images/sampling.png)
+![sampling graph](Images/sampling.png)
 
 The idea is to take samples that will allow the signal to be recreated later by just the samples alone.
 
