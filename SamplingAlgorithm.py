@@ -6,10 +6,67 @@ import matplotlib.image as mpimg
 from scipy.spatial import Voronoi, voronoi_plot_2d
 
 
-fsize = (9,6)
 
-width = 431 # needs to be 800
-height = 283 # needs to be 525
+# --------------------------------------------------------------------------------------------------
+# SAMPLER CLASS
+# --------------------------------------------------------------------------------------------------
+class Sampler:
+
+	
+	def __init__(self, img_data=None, filepath = None):
+		if filepath:
+			self.img_data = mpimg.imread(filepath)
+		else:
+			self.img_data = img_data
+		self.sample = np.array([])
+		self.fsize = (9,6)
+		if img_data:
+			self.height, self.width = self.img_data.shape[:2]
+		else:
+			self.width = 800 # needs to be 800
+			self.height = 525 # needs to be 525
+
+
+
+	def make_sample(self, method, numPoints=100, r=20, numCandidates=10):
+		'''
+		Will generate and set self.sample to a sample of specified attributes.
+
+		method = 'random','best_candidate', or 'bridson' to generate samples with given method
+		kwargs are
+			- numPoints = number of samples to generate for best_candidate and random methods. 
+			- r = radius used for bridson method
+			- numCandidates = number of candidates to try for each point. Ignored if method = 'random'
+		'''
+		assert method in ['random','best_candidate', 'bridson']
+
+		if method == 'random':
+			self.sample = random_sampling(numPoints, self.width, self.height)
+			return self.sample
+		elif method == 'best_candidate':
+			self.sample = best_candidate(numPoints, numCandidates, self.width, self.height)
+			return self.sample
+		else:
+			self.sample = bridson_sample(r, numCandidates, self.width, self.height)
+			return self.sample
+
+	def plot_samp(self, figsize = None, ivl = 25):
+		if not figsize:
+			figsize = self.fsize
+		return animate_plot(self.sample, self.width, self.height, ivl = ivl, figsize = self.fsize)
+
+	def show_img(self):
+		return plt.imshow(self.img_data)
+
+	def sample_img(self, method='random', numPoints=100, r = 10, numCandidates=10):
+		if not self.sample.size:
+			self.make_sample(method,numPoints,r,numCandidates)
+		return sample_image(self.sample, self.fsize, img_data=self.img_data)
+
+
+# --------------------------------------------------------------------------------------------------
+# PLOTTING
+# --------------------------------------------------------------------------------------------------
 
 
 def update_plot(num, data, line):
@@ -17,7 +74,8 @@ def update_plot(num, data, line):
 	return line
 
 
-def animate_plot(fig, samp, ivl = 50):
+def animate_plot(samp, width, height, ivl = 50, figsize = (9,6)):
+	fig = plt.figure(figsize=figsize)
 	l, = plt.plot([],[], '.r', ms = 8)
 	plt.xlim(-10,width + 10)
 	plt.ylim(-10, height + 10)
@@ -32,7 +90,7 @@ def animate_plot(fig, samp, ivl = 50):
 # RANDOM SAMPLING
 # --------------------------------------------------------------------------------------------------
 
-def random_sampling(numPoints):
+def random_sampling(numPoints, width, height):
 	samples = [np.random.random(size = numPoints)*width, np.random.random(size = numPoints)*height ]
 	return np.array(samples).T
 
@@ -45,7 +103,7 @@ def getDistance(p1, p2):
 	distance = np.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
 	return distance
 
-def best_candidate(numPoints, numCandidates):
+def best_candidate(numPoints, numCandidates, width, height):
 	points =[(np.random.random()*width, np.random.random()*height)]
 	print 'First Point:', points[0]
 	for n in range(numPoints):
@@ -93,7 +151,7 @@ def rand_annulus(ref, r, wt,ht):
 	return (x,y) 
 
 
-def bridson_sample(r, numCandidates = 20):
+def bridson_sample(r, numCandidates, width, height):
 	points =[]
 	active = [(np.random.random()*width, np.random.random()*height)]
 	finished = False
@@ -124,43 +182,50 @@ def bridson_sample(r, numCandidates = 20):
 	return np.ceil(np.array(points)).astype('int')
 
 
-random_samps1000 =random_sampling(1000)
-
-bc500 = best_candidate(500,15)
-x1, y1 = bc500[:,0], bc500[:,1]
-
-bc500_20 = best_candidate(500,20)
-x2, y2 = bc500_20[:,0], bc500_20[:,1]
-
-bc1000 = best_candidate(1000, 15)
-x3, y3 = bc1000[:,0], bc1000[:,1]
-	
-
-brid_samps15_10 = bridson_sample(15,10)
-x4 = brid_samps15_10[:,0]
-y4 = brid_samps15_10[:,1]
-
-# sampling gets slower as you raise the number of candidates to generate (2nd param)
-brid_samps15_20 = bridson_sample(15,20)
-x5 = brid_samps15_20[:,0]
-y5 = brid_samps15_20[:,1]
-
-
-# sampling gets better as you lower the allowed distance between points (1st parameter)
-brid_samps10 = bridson_sample(10,10)
-x6 = brid_samps10[:,0]
-y6 = brid_samps10[:,1]
+# --------------------------------------------------------------------------------------------------
+# TESTING IT OUT
+# --------------------------------------------------------------------------------------------------
 
 
 
-all_samples = [random_samps1000, bc500, bc500_20, bc1000, 
-				brid_samps15_10, brid_samps15_20, brid_samps10]
+def main():
+	random_samps1000 =random_sampling(1000)
 
-titles = ['1000 Random Samples', 'Best Candidate Sampling \n 500 Points, 15 Candidates', 
-			'Best Candidate Sampling \n 500 Points, 20 Candidates', 'Best Candidate Sampling \n 1000 Points, 15 Candidates',
-			'Bridson Sampling \n Min_dist = 15, NumCandidates = 10', 'Bridson Sampling \n Min_dist = 15, NumCandidates = 20',
-			'Bridson Sampling \n Min_dist = 10, NumCandidates = 10']
+	bc500 = best_candidate(500,15)
+	x1, y1 = bc500[:,0], bc500[:,1]
 
+	bc500_20 = best_candidate(500,20)
+	x2, y2 = bc500_20[:,0], bc500_20[:,1]
+
+	bc1000 = best_candidate(1000, 15)
+	x3, y3 = bc1000[:,0], bc1000[:,1]
+		
+
+	brid_samps15_10 = bridson_sample(15,10)
+	x4 = brid_samps15_10[:,0]
+	y4 = brid_samps15_10[:,1]
+
+	# sampling gets slower as you raise the number of candidates to generate (2nd param)
+	brid_samps15_20 = bridson_sample(15,20)
+	x5 = brid_samps15_20[:,0]
+	y5 = brid_samps15_20[:,1]
+
+
+	# sampling gets better as you lower the allowed distance between points (1st parameter)
+	brid_samps10 = bridson_sample(10,10)
+	x6 = brid_samps10[:,0]
+	y6 = brid_samps10[:,1]
+
+
+
+	all_samples = [random_samps1000, bc500, bc500_20, bc1000, 
+					brid_samps15_10, brid_samps15_20, brid_samps10]
+
+	titles = ['1000 Random Samples', 'Best Candidate Sampling \n 500 Points, 15 Candidates', 
+				'Best Candidate Sampling \n 500 Points, 20 Candidates', 'Best Candidate Sampling \n 1000 Points, 15 Candidates',
+				'Bridson Sampling \n Min_dist = 15, NumCandidates = 10', 'Bridson Sampling \n Min_dist = 15, NumCandidates = 20',
+				'Bridson Sampling \n Min_dist = 10, NumCandidates = 10']
+	return all_samples, titles
 
 
 # VORONOI OF IMAGE
@@ -168,9 +233,15 @@ titles = ['1000 Random Samples', 'Best Candidate Sampling \n 500 Points, 15 Cand
 #IMG
 carmen = mpimg.imread('/Users/RickS/Pictures/IMG_0314.JPG')
 
-def sample_img(img_fp, samples):
+def sample_image(samples, fsize, img_fp=None, img_data=None):
+	if img_fp == None and img_data == None:
+		print "No Image Data. Please pass a filepath or np array of image data."
+		return
 	# samples must have shape (n, 2)
-	img = mpimg.imread(img_fp)
+	if img_fp:
+		img = mpimg.imread(img_fp)
+	else:
+		img = img_data
 	# swap axes so width x height is aligned with samples row/column
 	# flip left to right so not upside down... it's werid i dunnno
 	img = np.fliplr(img.swapaxes(0,1))
@@ -202,5 +273,8 @@ def sample_img(img_fp, samples):
 	plt.show()
 	return vor, line2ds, lcollections
 
-
 newImg = '/Users/RickS/Documents/Programming/Metis/Bootcamp/investigations/rick/IMG_5791.jpg'
+
+
+if __name__ == '__main__':
+	all_samples, titles = main()
