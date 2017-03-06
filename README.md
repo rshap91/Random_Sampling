@@ -27,9 +27,14 @@ There are a number of ways to do this and I will be focusing on some methods tha
 
 `
 from SamplingAlgorithm import *
+
 Sampler = Sampler('tux.png')
+
 Sampler.make_sample(‘bridson’)
+
 Sampler.show_img()
+
 Sampler.plot_samp(ivl=1)
+
 Sampler.sample_img()
 `
