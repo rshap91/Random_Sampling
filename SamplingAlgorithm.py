@@ -13,15 +13,16 @@ from scipy.spatial import Voronoi, voronoi_plot_2d
 class Sampler:
 
 	
-	def __init__(self, img_data=None, filepath = None):
+	def __init__(self, filepath = None, img_data=None):
 		if filepath:
 			self.img_data = mpimg.imread(filepath)
 		else:
 			self.img_data = img_data
 		self.sample = np.array([])
 		self.fsize = (9,6)
-		if img_data:
+		if self.img_data is not None:
 			self.height, self.width = self.img_data.shape[:2]
+			self.height, self.width = self.height-1, self.width-1 # 0 indexing
 		else:
 			self.width = 800 # needs to be 800
 			self.height = 525 # needs to be 525
@@ -50,18 +51,23 @@ class Sampler:
 			self.sample = bridson_sample(r, numCandidates, self.width, self.height)
 			return self.sample
 
-	def plot_samp(self, figsize = None, ivl = 25):
+	def plot_samp(self, figure=None, figsize = None, ivl = 25):
+		if figure:
+			return animate_plot(self.sample, self.width, self.height, figure, ivl = ivl)
 		if not figsize:
 			figsize = self.fsize
-		return animate_plot(self.sample, self.width, self.height, ivl = ivl, figsize = self.fsize)
+		return animate_plot(self.sample, self.width, self.height, figsize = self.fsize, ivl = ivl)
 
 	def show_img(self):
-		return plt.imshow(self.img_data)
+		plt.ylim(-0.5,self.height+1)
+		return plt.imshow(np.flipud(self.img_data))
 
-	def sample_img(self, method='random', numPoints=100, r = 10, numCandidates=10):
+	def sample_img(self, figure= None, method='random', numPoints=100, r = 10, numCandidates=10):
 		if not self.sample.size:
 			self.make_sample(method,numPoints,r,numCandidates)
-		return sample_image(self.sample, self.fsize, img_data=self.img_data)
+		if figure:
+			return sample_image(self.sample, figure, self.fsize, img_data=self.img_data)	
+		return sample_image(self.sample, fsize = self.fsize, img_data=self.img_data)
 
 
 # --------------------------------------------------------------------------------------------------
@@ -74,8 +80,11 @@ def update_plot(num, data, line):
 	return line
 
 
-def animate_plot(samp, width, height, ivl = 50, figsize = (9,6)):
-	fig = plt.figure(figsize=figsize)
+def animate_plot(samp, width, height, figure= None, figsize = (9,6), ivl = 50):
+	if not figure:
+		fig = plt.figure(figsize=figsize)
+	else:
+		fig = figure
 	l, = plt.plot([],[], '.r', ms = 8)
 	plt.xlim(-10,width + 10)
 	plt.ylim(-10, height + 10)
@@ -106,7 +115,11 @@ def getDistance(p1, p2):
 def best_candidate(numPoints, numCandidates, width, height):
 	points =[(np.random.random()*width, np.random.random()*height)]
 	print 'First Point:', points[0]
+	pct_done = 0
 	for n in range(numPoints):
+		pct_done +=1
+		if float(pct_done)/numPoints %20 == 0:
+			print "{}% Done...".format(np.round(float(pct_done)/numPoints, 2)*100)
 		# EACH POINT
 		best_point = None
 		max_dist = 0
@@ -157,7 +170,11 @@ def bridson_sample(r, numCandidates, width, height):
 	finished = False
 	print 'First Point:', active[0]
 	# while we still have any active points
+	count = 0
 	while active:
+		count +=1
+		if count%500 == 0:
+			print "{} Iterations Done".format(count)
 		# choose an active point at random (SLOW)
 		ref_point = active[np.random.choice(len(active))]
 		point_found = False
@@ -233,8 +250,8 @@ def main():
 #IMG
 carmen = mpimg.imread('/Users/RickS/Pictures/IMG_0314.JPG')
 
-def sample_image(samples, fsize, img_fp=None, img_data=None):
-	if img_fp == None and img_data == None:
+def sample_image(samples, figure = None, fsize = (9,6), img_fp=None, img_data=None):
+	if img_fp is None and img_data is None:
 		print "No Image Data. Please pass a filepath or np array of image data."
 		return
 	# samples must have shape (n, 2)
@@ -245,9 +262,11 @@ def sample_image(samples, fsize, img_fp=None, img_data=None):
 	# swap axes so width x height is aligned with samples row/column
 	# flip left to right so not upside down... it's werid i dunnno
 	img = np.fliplr(img.swapaxes(0,1))
+	if img.max() <=1:
+		normalized = True
 	samps = samples[::].astype('int')
 	# i don't think this is necessary
-	colors = np.array([img[s[0], s[1]] for s in samps])/255.
+	colors = np.round(np.array([img[s[0], s[1]] for s in samps])/255.,4).T
 
 	vor = Voronoi(samps)
 	vor.vertices # points that characterize the boundaries of the regions
@@ -255,7 +274,10 @@ def sample_image(samples, fsize, img_fp=None, img_data=None):
 	vor.points # (same thing as samples1)
 	vor.point_region # mapping from points to regions, # values are INDICES of vor.regions 
 
-	fig = plt.figure(figsize = fsize)
+	if figure:
+		fig = figure
+	else:
+		fig = plt.figure(figsize = fsize)
 	ax = plt.gca()
 	voronoi_plot_2d(vor, ax = ax)
 
@@ -264,11 +286,20 @@ def sample_image(samples, fsize, img_fp=None, img_data=None):
 		vert_idxs = vor.regions[reg_idx]
 		if -1 in vert_idxs: continue
 		verts = np.array([vor.vertices[ix] for ix in vert_idxs]).T
-		ax.fill(verts[0],verts[1], color =  img[cntrPt[0],cntrPt[1]]/255., alpha = 0.88)
+		if normalized:
+			color = img[cntrPt[0],cntrPt[1]]
+		else:
+			color = img[cntrPt[0],cntrPt[1]]/255.
+		ax.fill(verts[0],verts[1], color = color , alpha = 0.88) 
 
 	ax_children = ax.get_children()
-	line2ds = ax_children[-12:-10]
+	line2ds = ax_children[-12:-10] # these are: center_points, and vertices
 	lcollections = ax_children[:2]
+
+	for dots in line2ds:
+		# don't show the center points and vertices
+		dots.set_visible(False)
+
 
 	plt.show()
 	return vor, line2ds, lcollections
