@@ -21,3 +21,15 @@ Instead you want to choose points that are *MOSTLY* evenly distributed but still
 
 
 There are a number of ways to do this and I will be focusing on some methods that fall under the category of [Random Sampling](Sampling_Algorithms.ipynb).
+
+
+### Example
+
+`
+from SamplingAlgorithm import *
+Sampler = Sampler('tux.png')
+Sampler.make_sample(‘bridson’)
+Sampler.show_img()
+Sampler.plot_samp(ivl=1)
+Sampler.sample_img()
+`
